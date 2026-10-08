@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="c" width="600" height="400"></canvas>
+<script>
+  const c = document.getElementById('c');
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0,0,600,400);
+  ctx.fillStyle = "#000000";
+  ctx.font = "bold 16px sans-serif";
+  ctx.fillText("Mfg By: Apex Agro Foods Ltd, Sector 9, Gurgaon, HR", 30, 60);
+  ctx.fillText("Generic Name: Pure Mustard Seed Oil", 30, 100);
+  ctx.fillText("Net Quantity: 200 ml", 30, 140);
+  ctx.fillText("Month & Year of Mfg: 08/2026", 30, 180);
+  ctx.fillText("MRP: Rs 150.00 (Incl. of all taxes)", 30, 220);
+  ctx.fillText("Consumer Care: support@apexagro.in | 1800-200-800", 30, 260);
+  ctx.fillText("Best Before: 12 Months from packing", 30, 300);
+  
+  const a = document.createElement('a');
+  a.download = 'sample-label.png';
+  a.href = c.toDataURL();
+  a.click();
+</script>
+</body>
+</html>

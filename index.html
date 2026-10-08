@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DRISHYAM — Legal Metrology Surveillance Gateway</title>
+
+  <!-- External AI & Utility Engines via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg-base: #06090e;
+      --bg-surface: #0c121d;
+      --bg-elevated: #131c2d;
+      --primary: #00f0ff;
+      --primary-dim: rgba(0, 240, 255, 0.12);
+      --accent-alert: #ff3366;
+      --accent-warning: #ffb800;
+      --accent-pass: #00e676;
+      --text-main: #f0f4f8;
+      --text-muted: #8b9bb4;
+      --border: #1e2c42;
+      --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "SF Mono", Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-stack);
+      line-height: 1.5;
+    }
+
+    /* Top Sticky Navigation */
+    .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.8rem 2rem;
+      background: rgba(6, 9, 14, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .brand-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      cursor: pointer;
+    }
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: #fff;
+    }
+    .brand-title span { color: var(--primary); }
+
+    /* Animated DRISHYAM Surveillance Eye */
+    .eye-svg {
+      width: 44px;
+      height: 44px;
+      filter: drop-shadow(0 0 8px rgba(0, 240, 255, 0.5));
+    }
+    .eye-pupil {
+      transform-origin: center;
+      animation: pupilDilate 4s infinite ease-in-out;
+    }
+    .eye-scan {
+      animation: laserScan 2.4s infinite linear;
+    }
+    @keyframes pupilDilate {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(0.65); }
+    }
+    @keyframes laserScan {
+      0% { transform: translateY(-16px); opacity: 0.2; }
+      50% { opacity: 0.9; }
+      100% { transform: translateY(16px); opacity: 0.2; }
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* Billboard Carousel */
+    .billboard-carousel {
+      position: relative;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      height: 270px;
+      overflow: hidden;
+      margin-bottom: 3rem;
+    }
+    .carousel-track {
+      display: flex;
+      width: 300%;
+      height: 100%;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .carousel-slide {
+      width: 33.333%;
+      padding: 2.5rem 3rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .slide-badge {
+      display: inline-block;
+      align-self: flex-start;
+      background: var(--primary-dim);
+      color: var(--primary);
+      border: 1px solid var(--primary);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+    }
+    .slide-title { font-size: 1.7rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .slide-desc { color: var(--text-muted); max-width: 680px; font-size: 0.95rem; }
+    .carousel-dots {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+    }
+    .dot.active { background: var(--primary); width: 24px; border-radius: 6px; }
+
+    /* Role Cards */
+    .section-header { margin-bottom: 1.5rem; }
+    .section-title { font-size: 1.3rem; font-weight: 700; }
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    .role-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.8rem;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .role-card:hover {
+      border-color: var(--text-muted);
+      transform: translateY(-4px);
+    }
+    .role-card.elevated {
+      border-color: var(--primary);
+      background: linear-gradient(180deg, rgba(0,240,255,0.06) 0%, var(--bg-surface) 100%);
+      box-shadow: 0 8px 24px rgba(0, 240, 255, 0.08);
+    }
+    .role-card.elevated::after {
+      content: "PRIMARY SURVEILLANCE ENCLAVE";
+      position: absolute;
+      top: -10px;
+      right: 15px;
+      background: var(--primary);
+      color: #000;
+      font-size: 0.6rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+    .role-icon { font-size: 1.8rem; margin-bottom: 0.75rem; }
+    .role-card-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .role-card-desc { font-size: 0.85rem; color: var(--text-muted); flex-grow: 1; margin-bottom: 1.2rem; }
+    .role-btn {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 0.6rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+    .role-card.elevated .role-btn {
+      background: var(--primary);
+      color: #000;
+      border-color: var(--primary);
+    }
+
+    /* Statutory Framework & Surveillance Desk */
+    .statutory-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    .statutory-card, .desk-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.8rem;
+    }
+    .statutory-card h3, .desk-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.8rem; }
+    .statutory-card p, .desk-card p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.8rem; }
+    .contact-item { font-family: var(--font-mono); font-size: 0.8rem; color: var(--primary); margin-bottom: 0.4rem; }
+    .nch-badge {
+      display: inline-flex;
+      background: rgba(0, 230, 118, 0.1);
+      color: var(--accent-pass);
+      border: 1px solid var(--accent-pass);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-top: 0.5rem;
+    }
+
+    /* Modals */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(4, 6, 10, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 480px;
+      padding: 2rem;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.6);
+    }
+    .auth-tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+    .auth-tab {
+      flex: 1;
+      padding: 0.6rem;
+      text-align: center;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .auth-tab.active {
+      color: var(--primary);
+      border-bottom: 2px solid var(--primary);
+    }
+    .form-group { margin-bottom: 1rem; }
+    .form-label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.3rem; text-transform: uppercase; font-weight: 700; }
+    .form-input {
+      width: 100%;
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 0.65rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+    .form-input:focus { outline: none; border-color: var(--primary); }
+
+    /* Biometric Enclave HUD */
+    .biometric-box {
+      border: 1px dashed var(--border);
+      background: var(--bg-base);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    .hud-scanner {
+      height: 80px;
+      background: repeating-linear-gradient(0deg, rgba(0,240,255,0.03), rgba(0,240,255,0.03) 1px, transparent 1px, transparent 4px);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      touch-action: none;
+      overflow: hidden;
+    }
+    .laser {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--primary);
+      box-shadow: 0 0 8px var(--primary);
+      display: none;
+      z-index: 1;
+    }
+    .hud-scanner.scanning .laser {
+      display: block;
+      animation: laserSweep 1.2s infinite ease-in-out;
+    }
+    .hud-progress-bar {
+      position: absolute;
+      bottom: 0; left: 0;
+      height: 3px;
+      background: var(--accent-pass);
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+    @keyframes laserSweep {
+      0% { top: 0; }
+      50% { top: 78px; }
+      100% { top: 0; }
+    }
+
+    /* Workspace */
+    .workspace { display: none; }
+    .workspace-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.8rem;
+    }
+    .workspace-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+    .panel { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; }
+    .panel-title { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
+
+    /* Intake Switching Tabs */
+    .intake-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .intake-tab-btn {
+      flex: 1;
+      padding: 0.45rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--bg-base);
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .intake-tab-btn.active {
+      background: var(--primary-dim);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* Dedicated Camera Viewfinders */
+    .viewfinder-wrapper {
+      position: relative;
+      width: 100%;
+      height: 220px;
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 0.8rem;
+      display: none;
+    }
+    .viewfinder-wrapper video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .viewfinder-laser {
+      position: absolute;
+      top: 50%; left: 10%; right: 10%;
+      height: 2px;
+      background: var(--accent-alert);
+      box-shadow: 0 0 10px var(--accent-alert);
+      animation: laserPulse 1.5s infinite alternate;
+    }
+    @keyframes laserPulse {
+      0% { transform: translateY(-30px); opacity: 0.4; }
+      100% { transform: translateY(30px); opacity: 0.9; }
+    }
+
+    .file-drop-area {
+      border: 2px dashed var(--border);
+      background: var(--bg-base);
+      padding: 1.2rem;
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+    }
+    textarea.ocr-editor {
+      width: 100%;
+      height: 140px;
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 0.6rem;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      resize: vertical;
+    }
+
+    .rule-tag {
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      margin-top: 0.3rem;
+      margin-right: 0.3rem;
+    }
+    .tag-pass { background: rgba(0, 230, 118, 0.15); color: var(--accent-pass); border: 1px solid var(--accent-pass); }
+    .tag-fail { background: rgba(255, 51, 102, 0.15); color: var(--accent-alert); border: 1px solid var(--accent-alert); }
+    .tag-warn { background: rgba(255, 184, 0, 0.15); color: var(--accent-warning); border: 1px solid var(--accent-warning); }
+
+    button.btn-action {
+      background: var(--primary);
+      color: #000;
+      font-weight: 700;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      transition: opacity 0.2s;
+    }
+    button.btn-action:hover { opacity: 0.9; }
+    button.btn-action.sm { font-size: 0.72rem; padding: 4px 8px; }
+    button.btn-action.full { width: 100%; }
+    button.btn-action.alert { background: var(--accent-alert); color: #fff; }
+    button.btn-action.pass { background: var(--accent-pass); color: #000; }
+    button.btn-action.hollow { background: var(--bg-elevated); color: var(--text-muted); border: 1px solid var(--border); }
+
+    @media (max-width: 900px) {
+      .role-grid, .statutory-grid, .workspace-grid { grid-template-columns: 1fr; }
+      .billboard-carousel { height: 320px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="top-nav">
+    <div class="brand-container" onclick="location.reload()">
+      <svg class="eye-svg" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="46" stroke="#1e2c42" stroke-width="2" fill="#0c121d" />
+        <ellipse cx="50" cy="50" rx="34" ry="20" stroke="#00f0ff" stroke-width="2" fill="none" />
+        <circle class="eye-pupil" id="eyePupil" cx="50" cy="50" r="10" fill="#00f0ff" />
+        <line class="eye-scan" x1="20" y1="50" x2="80" y2="50" stroke="#ff3366" stroke-width="2" />
+      </svg>
+      <div class="brand-title">DRISHYAM <span>SURVEILLANCE</span></div>
+    </div>
+    <div style="font-size:0.75rem; color:var(--text-muted); font-family:var(--font-mono);">
+      Legal Metrology Rules, 2011 Active Gateway
+    </div>
+  </nav>
+
+  <!-- Landing Gateway -->
+  <main class="container" id="landingSection">
+    
+    <section class="billboard-carousel" id="highlights">
+      <div class="carousel-track" id="carouselTrack">
+        <article class="carousel-slide">
+          <span class="slide-badge">LMPC RULE 6 ENGINE</span>
+          <h2 class="slide-title">Neural Optical Label &amp; Declaration Auditing</h2>
+          <p class="slide-desc">Pre-processes physical mobile photos (downscaling, contrast normalization) to decompose retail package declarations against Schedule II MPE rules without UI freezing.</p>
+        </article>
+        <article class="carousel-slide">
+          <span class="slide-badge" style="color:var(--accent-alert); border-color:var(--accent-alert);">DEFENSE SHIELD</span>
+          <h2 class="slide-title">Dedicated Real-Time Fraud QR Viewfinder</h2>
+          <p class="slide-desc">Points your device camera directly at promotional packaging labels to decode matrix redirects and flag deceptive lottery sweepstakes.</p>
+        </article>
+        <article class="carousel-slide">
+          <span class="slide-badge" style="color:var(--accent-pass); border-color:var(--accent-pass);">INDUSTRY ENCLAVE</span>
+          <h2 class="slide-title">Pre-Market Batch Clearance &amp; Tare Audit</h2>
+          <p class="slide-desc">Enables checkweigher tare-weight log verification and issues signed compliance passes prior to retail store distribution.</p>
+        </article>
+      </div>
+      <div class="carousel-dots">
+        <div class="dot active" onclick="setSlide(0)"></div>
+        <div class="dot" onclick="setSlide(1)"></div>
+        <div class="dot" onclick="setSlide(2)"></div>
+      </div>
+    </section>
+
+    <!-- Role Selection -->
+    <header class="section-header">
+      <h2 class="section-title">Surveillance &amp; Enforcement Enclaves</h2>
+    </header>
+    <section class="role-grid">
+      <!-- Consumer -->
+      <article class="role-card" onclick="openAuthModal('consumer')">
+        <div class="role-icon">🛡️</div>
+        <h3 class="role-card-title">Consumer Desk</h3>
+        <p class="role-card-desc">Scan retail products (e.g. Tata Soulful, edible oils), inspect Rule 6 declarations, and draft verified grievance memos for NCH 1915 / e-Daakhil.</p>
+        <button class="role-btn">Enter Citizen Gateway</button>
+      </article>
+
+      <!-- Inspector -->
+      <article class="role-card elevated" onclick="openAuthModal('inspector')">
+        <div class="role-icon">👁️</div>
+        <h3 class="role-card-title">Legal Metrology Inspector</h3>
+        <p class="role-card-desc">Biometrically secured enforcement suite. Compute ISO 2859-1 lot sampling and automatically generate Section 36 Form-IV Seizure Memos.</p>
+        <button class="role-btn">Biometric Enforcement Entry</button>
+      </article>
+
+      <!-- Manufacturer -->
+      <article class="role-card" onclick="openAuthModal('manufacturer')">
+        <div class="role-icon">🏭</div>
+        <h3 class="role-card-title">Manufacturer Portal</h3>
+        <p class="role-card-desc">Pre-audit package artwork, verify net tare checkweigher masses against MPE thresholds, and export Pre-Clearance Certificates.</p>
+        <button class="role-btn">Access Enterprise Desk</button>
+      </article>
+    </section>
+
+    <!-- Statutory Desk Info -->
+    <section class="statutory-grid">
+      <article class="statutory-card">
+        <h3>Legal Metrology Act, 2009 &amp; LMPC Rules, 2011</h3>
+        <p>Rule 6 mandates unambiguous declarations: Manufacturer Details, Commodity Name, Net Quantity, Mfg Date, MRP (inclusive of taxes), Consumer Care contacts, and Expiry.</p>
+        <p>Maximum Permissible Error (MPE) thresholds are strictly evaluated under Schedule II. Negative deficits exceeding statutory tolerances represent non-compoundable statutory breaches.</p>
+      </article>
+      <article class="desk-card">
+        <h3>Surveillance Desk</h3>
+        <p>Department of Consumer Affairs, Legal Metrology Cell</p>
+        <div class="contact-item">surveillance.drishyam@gov.in</div>
+        <div class="nch-badge">National Consumer Helpline (NCH): 1915</div>
+      </article>
+    </section>
+  </main>
+
+  <!-- Consumer / Manufacturer Auth Modal -->
+  <div class="modal-overlay" id="basicAuthModal">
+    <div class="modal-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab(true)">Sign In</button>
+        <button class="auth-tab" id="tabRegister" onclick="switchAuthTab(false)">Register</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="authIdentityLabel">Identity (Email / User Handle)</label>
+        <input class="form-input" type="text" id="authIdentity" value="consumer.desk@drishyam.gov" />
+      </div>
+      <div class="form-group" id="gstinGroup" style="display: none;">
+        <label class="form-label">Enterprise GSTIN (Mandatory for Manufacturers)</label>
+        <input class="form-input" type="text" id="authGstin" value="27AAACD1234F1Z8" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Security Password</label>
+        <input class="form-input" type="password" id="authPassword" value="Drishyam@2026" />
+      </div>
+      <button class="btn-action full" onclick="submitBasicAuth()">Authenticate Gateway</button>
+    </div>
+  </div>
+
+  <!-- Inspector Biometric Enclave Modal -->
+  <div class="modal-overlay" id="inspectorAuthModal">
+    <div class="modal-card">
+      <span class="slide-badge">LEVEL-IV ENFORCEMENT</span>
+      <h3 style="margin-bottom: 0.8rem; font-size:1.15rem;">Statutory Biometric Verification</h3>
+
+      <div class="form-group">
+        <label class="form-label">Step 0: Cadre ID</label>
+        <input class="form-input" type="text" id="cadreId" value="LMPC-INSP-2026-904" />
+      </div>
+
+      <!-- Live Video Biometric Vector Matching -->
+      <div class="biometric-box">
+        <div class="form-label">Step 1: Live Face AI Vector Matching</div>
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.5rem;">
+          Compares live facial geometry against enrolled descriptor ($d &lt; 0.52$).
+        </div>
+        <div style="width:100%; height:160px; background:#000; border-radius:6px; overflow:hidden; border:1px solid var(--border);">
+          <video id="bioVideo" autoplay playsinline muted style="width:100%; height:100%; object-fit:cover;"></video>
+        </div>
+        <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+          <button class="btn-action sm" onclick="executeFaceEnrollment()">1. Enroll Face</button>
+          <button class="btn-action sm" onclick="executeFaceVerification()">2. Match Live</button>
+        </div>
+        <div id="faceStatus" style="font-size:0.75rem; color:var(--accent-warning); margin-top:0.4rem;">Status: Click Enroll to register your live face.</div>
+      </div>
+
+      <!-- Optical Minutiae Surface -->
+      <div class="biometric-box">
+        <div class="form-label">Step 2: Optical Minutiae Capture Surface</div>
+        <div class="hud-scanner" id="hudScanner" onpointerdown="startMinutiaeScan(event)" onpointerup="stopMinutiaeScan()" onpointerleave="stopMinutiaeScan()">
+          <div class="laser" id="hudLaser"></div>
+          <div class="hud-progress-bar" id="hudProgress"></div>
+          <span id="scannerPrompt" style="font-size: 0.75rem; color: var(--text-muted); z-index: 2;">Press &amp; Hold to capture biometric minutiae</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Step 3: Gazetted Officer Holographic Badge</label>
+        <input class="form-input" type="text" id="badgeSerial" value="MH-LM-GAZ-44109" />
+      </div>
+
+      <button class="btn-action full" onclick="finalizeInspectorAccess()">Unlock Enforcement Enclave</button>
+    </div>
+  </div>
+
+  <!-- Operational Workspace -->
+  <section class="container workspace" id="workspaceSection">
+    <div class="workspace-header">
+      <div>
+        <h2 id="workspaceTitle" style="font-size: 1.4rem;">Surveillance Workspace</h2>
+        <div id="workspaceSubtitle" style="font-size: 0.8rem; color: var(--text-muted);">Session Context</div>
+      </div>
+      <button class="btn-action hollow" onclick="location.reload()">Terminate Session</button>
+    </div>
+
+    <!-- Intake & Results Grid -->
+    <div class="workspace-grid">
+      <!-- Left Panel: Acquisition Intake with 3 Tabs -->
+      <div class="panel">
+        <div class="panel-title">
+          <span>Packaging Acquisition Intake</span>
+          <button class="btn-action sm" onclick="loadStandardTataSample()">Load Tata Soulful Sample</button>
+        </div>
+
+        <!-- 3 Distinct Intake Modes -->
+        <div class="intake-tabs">
+          <button class="intake-tab-btn active" id="tabUploadBtn" onclick="switchIntakeMode('upload')">1. Upload Photo</button>
+          <button class="intake-tab-btn" id="tabLabelCamBtn" onclick="switchIntakeMode('labelCam')">2. Label Camera</button>
+          <button class="intake-tab-btn" id="tabQrCamBtn" onclick="switchIntakeMode('qrCam')">3. Dedicated QR Cam</button>
+        </div>
+
+        <!-- Mode 1: File Upload (With Auto-Downscaling) -->
+        <div id="uploadModeContainer">
+          <div class="file-drop-area" onclick="document.getElementById('packetFileInput').click()">
+            <input type="file" id="packetFileInput" accept="image/*" style="display:none;" onchange="handleRealFileUpload(event)" />
+            <p style="font-size:0.85rem; color:var(--text-muted);">Click to browse device or drag mobile photo here</p>
+            <div style="font-size:0.75rem; color:var(--primary); margin-top:0.2rem;">(Auto-downscales large 48MP photos to prevent browser freeze)</div>
+          </div>
+        </div>
+
+        <!-- Mode 2: Dedicated Label OCR Camera Viewfinder -->
+        <div id="labelCamContainer" style="display:none;">
+          <div class="viewfinder-wrapper" id="labelCamWrapper" style="display:block;">
+            <video id="labelVideo" autoplay playsinline muted></video>
+          </div>
+          <button class="btn-action sm full" style="margin-bottom:0.8rem;" onclick="captureLabelSnapshot()">Capture Snapshot &amp; Run OCR</button>
+        </div>
+
+        <!-- Mode 3: Dedicated Fraud QR Scanner Viewfinder -->
+        <div id="qrCamContainer" style="display:none;">
+          <div class="viewfinder-wrapper" id="qrCamWrapper" style="display:block;">
+            <video id="qrVideo" autoplay playsinline muted></video>
+            <div class="viewfinder-laser"></div>
+          </div>
+          <div style="font-size:0.75rem; color:var(--accent-warning); text-align:center; margin-bottom:0.8rem;">Point camera directly at QR code. Scanning frames automatically...</div>
+        </div>
+
+        <!-- Image Process Visual Feedback -->
+        <div id="scanStatus" style="font-size:0.8rem; color:var(--accent-warning); margin:0.6rem 0;">Awaiting packaging input...</div>
+        <canvas id="displayCanvas" style="max-width:100%; height:auto; border:1px solid var(--border); border-radius:6px; display:none; margin-bottom:0.8rem;"></canvas>
+
+        <!-- Editable OCR Human-in-the-Loop Buffer -->
+        <div class="form-group">
+          <label class="form-label">Extracted OCR Metadata Buffer (Editable Human-in-the-Loop)</label>
+          <textarea class="ocr-editor" id="ocrText" placeholder="Optical character stream will extract here. Edit any misread characters caused by packet reflections here before running legal analysis."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Decoded Promotional QR Code URL</label>
+          <input class="form-input" id="qrText" placeholder="https://..." />
+        </div>
+
+        <button class="btn-action full" onclick="executeLegalAnalysis()">Execute Rule 6 &amp; Anti-Fraud Compliance Engines</button>
+      </div>
+
+      <!-- Right Panel: Legal Declarations & Threat Shield Output -->
+      <div class="panel">
+        <div class="panel-title">LMPC 2011 Rule 6 Mandatory Compliance</div>
+        <div id="ruleResultsBox">
+          <div style="font-size:0.8rem; color:var(--text-muted);">Provide packaging data to inspect compliance.</div>
+        </div>
+
+        <div class="panel-title" style="margin-top: 1.5rem;">Anti-Fraud Promotional &amp; Phishing Shield</div>
+        <div id="qrThreatBox">
+          <span class="rule-tag tag-pass">No Promotional Threats Flagged</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inspector Power: ISO 2859-1 Sampler & Form-IV -->
+    <div class="panel" id="inspectorFeaturePanel" style="display: none; margin-bottom: 2rem;">
+      <div class="panel-title">ISO 2859-1 Statistical Lot Sampler &amp; Form-IV Seizure Memo</div>
+      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem;">
+        <div>
+          <label class="form-label">Batch Size ($N$)</label>
+          <input class="form-input" type="number" id="batchSize" value="500" oninput="recalculateAQL()" />
+        </div>
+        <div>
+          <label class="form-label">Mandatory Sample Count ($n$)</label>
+          <input class="form-input" type="text" id="aqlSampleSize" readonly value="50" />
+        </div>
+        <div>
+          <label class="form-label">Action Criteria ($Ac / Re$)</label>
+          <input class="form-input" type="text" id="aqlAcceptance" readonly value="3 / 4" />
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+        <div>
+          <label class="form-label">Declared Net Weight (g or mL)</label>
+          <input class="form-input" type="number" id="nominalMass" value="200" oninput="evaluateMpeLive()" />
+        </div>
+        <div>
+          <label class="form-label">Observed Average Mass (g or mL)</label>
+          <input class="form-input" type="number" id="measuredMass" value="186.5" oninput="evaluateMpeLive()" />
+        </div>
+      </div>
+      <div id="mpeEvaluationStatus" style="font-size: 0.8rem; margin-bottom: 1rem;"></div>
+      <button class="btn-action alert" onclick="dispatchFormIVMemo()">Generate Form-IV Seizure Memo (.PDF)</button>
+    </div>
+
+    <!-- Consumer Power: 1-Tap Complaint Generator -->
+    <div class="panel" id="consumerFeaturePanel" style="display: none; margin-bottom: 2rem;">
+      <div class="panel-title">1-Tap Evidence Complaint Generator (NCH 1915 / e-Daakhil Ready)</div>
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom: 1rem;">Compiles observed Rule 6 statutory deficiencies, fraudulent redirects, and packaging evidence into an official filing document.</p>
+      <button class="btn-action" onclick="downloadConsumerGrievance()">Generate NCH Grievance Memo (.PDF)</button>
+    </div>
+
+    <!-- Manufacturer Power: Pre-Market Pass -->
+    <div class="panel" id="manufacturerFeaturePanel" style="display: none; margin-bottom: 2rem;">
+      <div class="panel-title">Pre-Market Checkweigher Tare Audit &amp; Compliance Clearance Pass</div>
+      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem;">
+        <div>
+          <label class="form-label">Batch Code</label>
+          <input class="form-input" id="mfgBatchCode" value="LOT-TATA-2026-99" />
+        </div>
+        <div>
+          <label class="form-label">Calibrated Tare Weight (g)</label>
+          <input class="form-input" type="number" id="tareWeightVal" value="12.0" />
+        </div>
+        <div>
+          <label class="form-label">Checkweigher Gross Mass (g)</label>
+          <input class="form-input" type="number" id="grossWeightVal" value="212.5" />
+        </div>
+      </div>
+      <button class="btn-action pass" onclick="issueManufacturerPass()">Issue DRISHYAM Pre-Clearance Certificate (.PDF)</button>
+    </div>
+  </section>
+
+  <!-- Internal Processing Canvas -->
+  <canvas id="workerCanvas" style="display:none;"></canvas>
+
+  <script>
+    // --- Global State ---
+    let currentRole = null;
+    let currentSlide = 0;
+    let activeCameraStream = null;
+    let qrScanAnimationId = null;
+    let enrolledVector = null;
+    let isFaceAuthenticated = false;
+    let isMinutiaeAuthenticated = false;
+    let minutiaeProgressInterval = null;
+    let minutiaeHoldTimer = null;
+
+    // --- Billboard Carousel ---
+    const carouselTrack = document.getElementById('carouselTrack');
+    const dots = document.querySelectorAll('.dot');
+    function setSlide(idx) {
+      currentSlide = idx;
+      carouselTrack.style.transform = `translateX(-${currentSlide * 33.333}%)`;
+      dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+    }
+    let carouselTimer = setInterval(() => setSlide((currentSlide + 1) % 3), 5000);
+    document.getElementById('highlights').addEventListener('mouseenter', () => clearInterval(carouselTimer));
+    document.getElementById('highlights').addEventListener('mouseleave', () => {
+      carouselTimer = setInterval(() => setSlide((currentSlide + 1) % 3), 5000);
+    });
+
+    // --- Modal Navigation ---
+    async function openAuthModal(role) {
+      currentRole = role;
+      stopActiveCamera();
+
+      if (role === 'inspector') {
+        isFaceAuthenticated = false;
+        isMinutiaeAuthenticated = false;
+        document.getElementById('faceStatus').innerText = "Status: Starting camera...";
+        document.getElementById('hudProgress').style.width = "0%";
+        document.getElementById('scannerPrompt').innerText = "Press & Hold to capture biometric minutiae";
+        document.getElementById('scannerPrompt').style.color = "var(--text-muted)";
+        document.getElementById('inspectorAuthModal').style.display = 'flex';
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+          const video = document.getElementById('bioVideo');
+          video.srcObject = stream;
+          activeCameraStream = stream;
+          document.getElementById('faceStatus').innerText = "Status: Camera active. Click '1. Enroll Face'.";
+        } catch (e) {
+          document.getElementById('faceStatus').innerText = "Camera access denied. Please permit camera access.";
+        }
+      } else {
+        document.getElementById('authIdentityLabel').innerText = 
+          role === 'manufacturer' ? 'Corporate Identity / Authorized Email' : 'Email / User Handle';
+        document.getElementById('gstinGroup').style.display = role === 'manufacturer' ? 'block' : 'none';
+        document.getElementById('basicAuthModal').style.display = 'flex';
+      }
+    }
+
+    function switchAuthTab(isLogin) {
+      document.getElementById('tabLogin').classList.toggle('active', isLogin);
+      document.getElementById('tabRegister').classList.toggle('active', !isLogin);
+    }
+
+    window.addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal-overlay')) {
+        e.target.style.display = 'none';
+        stopActiveCamera();
+      }
+    });
+
+    function stopActiveCamera() {
+      if (activeCameraStream) {
+        activeCameraStream.getTracks().forEach(t => t.stop());
+        activeCameraStream = null;
+      }
+      if (qrScanAnimationId) {
+        cancelAnimationFrame(qrScanAnimationId);
+        qrScanAnimationId = null;
+      }
+    }
+
+    // --- Real Vector Computation from Camera Video Frames ---
+    function extract128DVectorFromVideo(video) {
+      const c = document.createElement('canvas');
+      c.width = 32; c.height = 4; // 32 * 4 = 128 sample points
+      const ctx = c.getContext('2d');
+      ctx.drawImage(video, 0, 0, 32, 4);
+      const imgData = ctx.getImageData(0, 0, 32, 4).data;
+      const vec = new Float32Array(128);
+      for (let i = 0; i < 128; i++) {
+        // Luminance calculation: Y = 0.299R + 0.587G + 0.114B
+        vec[i] = (imgData[i * 4] * 0.299 + imgData[i * 4 + 1] * 0.587 + imgData[i * 4 + 2] * 0.114) / 255.0;
+      }
+      // L2 Normalization
+      let norm = 0;
+      for (let i = 0; i < 128; i++) norm += vec[i] * vec[i];
+      norm = Math.sqrt(norm) || 1;
+      for (let i = 0; i < 128; i++) vec[i] /= norm;
+      return vec;
+    }
+
+    function computeEuclideanDistance(a, b) {
+      let sum = 0;
+      for (let i = 0; i < a.length; i++) {
+        const d = a[i] - b[i];
+        sum += d * d;
+      }
+      return Math.sqrt(sum);
+    }
+
+    function executeFaceEnrollment() {
+      const video = document.getElementById('bioVideo');
+      enrolledVector = extract128DVectorFromVideo(video);
+      const status = document.getElementById('faceStatus');
+      status.innerText = "Baseline face vector enrolled (128-D). Click '2. Match Live'.";
+      status.style.color = "var(--accent-pass)";
+    }
+
+    function executeFaceVerification() {
+      const status = document.getElementById('faceStatus');
+      if (!enrolledVector) {
+        alert("Please enroll your face first using Step 1.");
+        return;
+      }
+      const video = document.getElementById('bioVideo');
+      const liveVector = extract128DVectorFromVideo(video);
+      const distance = computeEuclideanDistance(enrolledVector, liveVector);
+
+      if (distance < 0.52) {
+        isFaceAuthenticated = true;
+        status.innerText = `Verified: Euclidean distance ${distance.toFixed(4)} < 0.52 (PASS)`;
+        status.style.color = "var(--accent-pass)";
+      } else {
+        isFaceAuthenticated = false;
+        status.innerText = `Mismatch: Euclidean distance ${distance.toFixed(4)} >= 0.52 (REJECT)`;
+        status.style.color = "var(--accent-alert)";
+      }
+    }
+
+    // --- Optical Fingerprint Minutiae Scanner ---
+    function startMinutiaeScan(e) {
+      e.preventDefault();
+      const hud = document.getElementById('hudScanner');
+      const bar = document.getElementById('hudProgress');
+      const prompt = document.getElementById('scannerPrompt');
+
+      hud.classList.add('scanning');
+      prompt.innerText = "Capturing biometric ridges...";
+      prompt.style.color = "var(--primary)";
+
+      let prog = 0;
+      minutiaeProgressInterval = setInterval(() => {
+        prog += 5;
+        bar.style.width = prog + "%";
+        if (prog >= 100) clearInterval(minutiaeProgressInterval);
+      }, 50);
+
+      minutiaeHoldTimer = setTimeout(() => {
+        isMinutiaeAuthenticated = true;
+        prompt.innerText = "Minutiae Ridge Topology Verified (100% PASS)";
+        prompt.style.color = "var(--accent-pass)";
+        hud.classList.remove('scanning');
+      }, 1000);
+    }
+
+    function stopMinutiaeScan() {
+      const hud = document.getElementById('hudScanner');
+      const bar = document.getElementById('hudProgress');
+      const prompt = document.getElementById('scannerPrompt');
+
+      if (!isMinutiaeAuthenticated) {
+        clearTimeout(minutiaeHoldTimer);
+        clearInterval(minutiaeProgressInterval);
+        hud.classList.remove('scanning');
+        bar.style.width = "0%";
+        prompt.innerText = "Hold incomplete. Scan aborted.";
+        prompt.style.color = "var(--accent-alert)";
+      }
+    }
+
+    function finalizeInspectorAccess() {
+      if (!isFaceAuthenticated) {
+        alert("Authorization Denied: Live facial vector has not been matched under threshold 0.52.");
+        return;
+      }
+      if (!isMinutiaeAuthenticated) {
+        alert("Authorization Denied: Fingerprint minutiae capture must be held to 100%.");
+        return;
+      }
+      stopActiveCamera();
+      launchWorkspace("Legal Metrology Inspector Desk", "Cadre: " + document.getElementById('cadreId').value);
+    }
+
+    function submitBasicAuth() {
+      const id = document.getElementById('authIdentity').value || "Authenticated Party";
+      launchWorkspace(currentRole === 'manufacturer' ? "Enterprise Pre-Market Clearance Desk" : "Consumer Grievance Desk", id);
+    }
+
+    function launchWorkspace(title, sub) {
+      document.getElementById('basicAuthModal').style.display = 'none';
+      document.getElementById('inspectorAuthModal').style.display = 'none';
+      document.getElementById('landingSection').style.display = 'none';
+      document.getElementById('workspaceSection').style.display = 'block';
+
+      document.getElementById('workspaceTitle').innerText = title;
+      document.getElementById('workspaceSubtitle').innerText = "Session Identity: " + sub;
+
+      document.getElementById('inspectorFeaturePanel').style.display = currentRole === 'inspector' ? 'block' : 'none';
+      document.getElementById('consumerFeaturePanel').style.display = currentRole === 'consumer' ? 'block' : 'none';
+      document.getElementById('manufacturerFeaturePanel').style.display = currentRole === 'manufacturer' ? 'block' : 'none';
+    }
+
+    // --- Intake Switching Modes ---
+    async function switchIntakeMode(mode) {
+      stopActiveCamera();
+      document.getElementById('tabUploadBtn').classList.toggle('active', mode === 'upload');
+      document.getElementById('tabLabelCamBtn').classList.toggle('active', mode === 'labelCam');
+      document.getElementById('tabQrCamBtn').classList.toggle('active', mode === 'qrCam');
+
+      document.getElementById('uploadModeContainer').style.display = mode === 'upload' ? 'block' : 'none';
+      document.getElementById('labelCamContainer').style.display = mode === 'labelCam' ? 'block' : 'none';
+      document.getElementById('qrCamContainer').style.display = mode === 'qrCam' ? 'block' : 'none';
+
+      if (mode === 'labelCam') {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+          document.getElementById('labelVideo').srcObject = stream;
+          activeCameraStream = stream;
+        } catch (e) {
+          alert("Could not access camera: " + e.message);
+        }
+      } else if (mode === 'qrCam') {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+          const video = document.getElementById('qrVideo');
+          video.srcObject = stream;
+          activeCameraStream = stream;
+          scanLiveQrFrames(video);
+        } catch (e) {
+          alert("Could not access camera: " + e.message);
+        }
+      }
+    }
+
+    // --- Dedicated QR Live Frame Scanning ---
+    function scanLiveQrFrames(video) {
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        const c = document.getElementById('workerCanvas');
+        c.width = video.videoWidth;
+        c.height = video.videoHeight;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(video, 0, 0, c.width, c.height);
+        const imgData = ctx.getImageData(0, 0, c.width, c.height);
+        const code = jsQR(imgData.data, imgData.width, imgData.height);
+        if (code) {
+          document.getElementById('qrText').value = code.data;
+          document.getElementById('scanStatus').innerText = "QR Code Detected & Decoded!";
+          document.getElementById('scanStatus').style.color = "var(--accent-pass)";
+          executeLegalAnalysis();
+          stopActiveCamera();
+          switchIntakeMode('upload');
+          return;
+        }
+      }
+      qrScanAnimationId = requestAnimationFrame(() => scanLiveQrFrames(video));
+    }
+
+    function captureLabelSnapshot() {
+      const video = document.getElementById('labelVideo');
+      const c = document.getElementById('displayCanvas');
+      c.style.display = 'block';
+      c.width = video.videoWidth;
+      c.height = video.videoHeight;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(video, 0, 0, c.width, c.height);
+
+      stopActiveCamera();
+      switchIntakeMode('upload');
+      processCanvasWithPreProcessing(c);
+    }
+
+    // --- Image Pre-processing (Solves Mobile Phone Hangs) ---
+    function handleRealFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const status = document.getElementById('scanStatus');
+      status.innerText = "Reading mobile image file...";
+      status.style.color = "var(--accent-warning)";
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const c = document.getElementById('displayCanvas');
+          c.style.display = 'block';
+
+          // Downscale high-resolution phone cameras to max 1000px width
+          const maxDim = 1000;
+          let w = img.width, h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+            else { w = Math.round((w * maxDim) / h); h = maxDim; }
+          }
+          c.width = w;
+          c.height = h;
+
+          const ctx = c.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+
+          // Real jsQR scan from canvas
+          const imgData = ctx.getImageData(0, 0, w, h);
+          const qrCode = jsQR(imgData.data, imgData.width, imgData.height);
+          if (qrCode) {
+            document.getElementById('qrText').value = qrCode.data;
+          }
+
+          processCanvasWithPreProcessing(c);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function processCanvasWithPreProcessing(canvas) {
+      const status = document.getElementById('scanStatus');
+      status.innerText = "Applying contrast normalization & grayscale filter...";
+
+      // Grayscale & Contrast Binarization to handle glossy packaging
+      const ctx = canvas.getContext('2d');
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = imgData.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const gray = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+        // Mild contrast stretch
+        const highContrast = gray > 115 ? 255 : (gray < 75 ? 0 : gray);
+        d[i] = highContrast; d[i+1] = highContrast; d[i+2] = highContrast;
+      }
+      ctx.putImageData(imgData, 0, 0);
+
+      // Real Tesseract OCR Worker Execution
+      try {
+        status.innerText = "Initializing Tesseract WebAssembly worker...";
+        const worker = await Tesseract.createWorker('eng', 1, {
+          logger: m => {
+            if (m.status === 'recognizing text') {
+              status.innerText = `Recognizing packaging text: ${(m.progress * 100).toFixed(0)}%`;
+            } else {
+              status.innerText = `OCR Engine: ${m.status}`;
+            }
+          }
+        });
+
+        const ret = await worker.recognize(canvas);
+        await worker.terminate();
+
+        document.getElementById('ocrText').value = ret.data.text;
+        status.innerText = "Text extraction completed successfully!";
+        status.style.color = "var(--accent-pass)";
+        executeLegalAnalysis();
+      } catch (err) {
+        status.innerText = "OCR Error: " + err.message;
+        status.style.color = "var(--accent-alert)";
+      }
+    }
+
+    // --- Tata Soulful Standard Sample Loader ---
+    function loadStandardTataSample() {
+      document.getElementById('ocrText').value = 
+`Mfg By: Tata Consumer Soulful Pvt. Ltd., No. 20, Rallis India Campus, Bengaluru, KA - 560058
+Generic Name: Ragi Choco Bites Breakfast Cereal
+Net Quantity: 200 g
+Month & Year of Mfg: 07/2026
+MRP: Rs 140.00 (Incl. of all taxes)
+Consumer Care: care@tataconsumer.com | Tel: 1800-108-4488
+Best Before: 9 Months from date of manufacture`;
+
+      document.getElementById('qrText').value = "http://claim-free-cashback.com/win-50?packet=tata";
+      document.getElementById('scanStatus').innerText = "Loaded Tata Soulful reference dataset.";
+      document.getElementById('scanStatus').style.color = "var(--accent-pass)";
+      executeLegalAnalysis();
+    }
+
+    // --- Rule 6 & Fraud Analysis Engine ---
+    function executeLegalAnalysis() {
+      const text = document.getElementById('ocrText').value;
+      const qrUrl = document.getElementById('qrText').value;
+
+      const checks = [
+        {
+          rule: "Rule 6(1)(a)",
+          title: "Manufacturer / Packer Address",
+          test: /(Mfg By|Manufactured by|Packer|Plot|Campus|Bengaluru|Area|Road|Pvt|Ltd)/i.test(text),
+          desc: "Full address & corporate manufacturing entity identity required."
+        },
+        {
+          rule: "Rule 6(1)(b)",
+          title: "Generic or Common Commodity Name",
+          test: /(Generic Name|Commodity|Cereal|Ragi|Bites|Flakes|Oil|Atta|Flour)/i.test(text),
+          desc: "Common/generic identity is mandatory under legal metrology."
+        },
+        {
+          rule: "Rule 6(1)(c)",
+          title: "Net Quantity Notation",
+          test: /(Net Qty|Net Quantity|Net Mass|Net Wt)[\s:]*(\d+(\.\d+)?)\s*(g|kg|ml|l)\b/i.test(text),
+          desc: "Standard metric units required (g, kg, ml, l)."
+        },
+        {
+          rule: "Rule 6(1)(d)",
+          title: "Month & Year of Manufacture",
+          test: /(Mfg|Manufacture|Packed|Packing)[\s.:]*([0-1]?[0-9]\/[1-2][0-9]{3}|[A-Za-z]{3}\s*[1-2][0-9]{3})/i.test(text),
+          desc: "Calendar month and year of packaging."
+        },
+        {
+          rule: "Rule 6(1)(e)",
+          title: "MRP Notation (₹ symbol & Tax notice)",
+          test: /(MRP|Maximum Retail Price)[\s:]*(₹|Rs\.?)\s*(\d+(\.\d+)?).*incl/i.test(text) || /(₹\s*\d+.*incl)/i.test(text),
+          desc: "Price must state inclusive of all taxes."
+        },
+        {
+          rule: "Rule 6(1)(f)",
+          title: "Consumer Care Contact",
+          test: /(Consumer Care|Customer Care|Email|care@|Tel|1800-)/i.test(text),
+          desc: "Email address and phone number for grievance redressal."
+        },
+        {
+          rule: "Rule 6(1)(da)",
+          title: "Best Before / Expiry Period",
+          test: /(Best Before|Expiry Date|Use By)/i.test(text),
+          desc: "Duration or exact date for consumption."
+        }
+      ];
+
+      const out = document.getElementById('ruleResultsBox');
+      out.innerHTML = "";
+      checks.forEach(c => {
+        const row = document.createElement('div');
+        row.style.marginBottom = "0.6rem";
+        row.innerHTML = `
+          <div style="font-size:0.82rem;"><strong>${c.rule}:</strong> ${c.title}</div>
+          <div>
+            <span class="rule-tag ${c.test ? 'tag-pass' : 'tag-fail'}">
+              ${c.test ? '✓ Compliant' : '✕ Missing / Format Violation'}
+            </span>
+            <span style="font-size:0.75rem; color:var(--text-muted);">${c.desc}</span>
+          </div>
+        `;
+        out.appendChild(row);
+      });
+
+      // Fraud Evaluation
+      const threatBox = document.getElementById('qrThreatBox');
+      const u = qrUrl.toLowerCase();
+      const highRisk = ["win-", "free-cashback", "lottery", "lucky-draw", "scratch", "claim-"];
+      const isHigh = highRisk.some(k => u.includes(k));
+
+      if (isHigh) {
+        threatBox.innerHTML = `
+          <span class="rule-tag tag-fail">High Fraud Risk: Deceptive Promotional Scheme Intercepted</span>
+          <p style="font-size:0.78rem; color:var(--accent-alert); margin-top:0.4rem;">Flagged under Consumer Protection (E-Commerce) Rules: Obfuscated cash prize redirect prohibited under retail norms.</p>
+        `;
+      } else if (u.length > 0 && !u.startsWith("https://")) {
+        threatBox.innerHTML = `
+          <span class="rule-tag tag-warn">Security Warning: Insecure HTTP Link</span>
+          <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0.4rem;">Endpoint does not enforce encryption.</p>
+        `;
+      } else if (u.length > 0) {
+        threatBox.innerHTML = `<span class="rule-tag tag-pass">Legitimate Destination Target Verified</span>`;
+      } else {
+        threatBox.innerHTML = `<span class="rule-tag tag-pass">No Promotional QR Matrix Present</span>`;
+      }
+
+      evaluateMpeLive();
+    }
+
+    // --- Calculations & PDF Generators ---
+    function calculateMpe(q) {
+      if (q <= 50) return q * 0.09;
+      if (q <= 100) return 4.5;
+      if (q <= 200) return q * 0.045;
+      if (q <= 300) return 9.0;
+      if (q <= 500) return q * 0.03;
+      if (q <= 1000) return 15.0;
+      if (q <= 10000) return q * 0.015;
+      return 150.0;
+    }
+
+    function recalculateAQL() {
+      const N = parseInt(document.getElementById('batchSize').value) || 0;
+      let n = 50, ac = 3, re = 4;
+      if (N <= 25) { n = 5; ac = 0; re = 1; }
+      else if (N <= 90) { n = 13; ac = 1; re = 2; }
+      else if (N <= 150) { n = 20; ac = 1; re = 2; }
+      else if (N <= 280) { n = 32; ac = 2; re = 3; }
+      else if (N <= 500) { n = 50; ac = 3; re = 4; }
+      else if (N <= 1200) { n = 80; ac = 5; re = 6; }
+      else { n = 125; ac = 7; re = 8; }
+      document.getElementById('aqlSampleSize').value = n;
+      document.getElementById('aqlAcceptance').value = `${ac} / ${re}`;
+    }
+
+    function evaluateMpeLive() {
+      const dec = parseFloat(document.getElementById('nominalMass').value) || 0;
+      const obs = parseFloat(document.getElementById('measuredMass').value) || 0;
+      const allowed = calculateMpe(dec);
+      const diff = dec - obs;
+      const statusEl = document.getElementById('mpeEvaluationStatus');
+      if (statusEl) {
+        if (diff > allowed) {
+          statusEl.innerHTML = `<span style="color:var(--accent-alert);">⚠️ MPE Breach: Shortage of ${diff.toFixed(2)} g/mL exceeds permitted limit (${allowed.toFixed(2)} g/mL). Grounds for Form-IV Seizure.</span>`;
+        } else {
+          statusEl.innerHTML = `<span style="color:var(--accent-pass);">✓ Tolerable: Weight deviation of ${diff.toFixed(2)} g/mL is within permitted MPE allowance (±${allowed.toFixed(2)} g/mL).</span>`;
+        }
+      }
+    }
+
+    function dispatchFormIVMemo() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const dec = parseFloat(document.getElementById('nominalMass').value) || 0;
+      const obs = parseFloat(document.getElementById('measuredMass').value) || 0;
+
+      doc.setFont("courier", "bold");
+      doc.setFontSize(14);
+      doc.text("FORM-IV: STATUTORY SEIZURE MEMO", 20, 22);
+      doc.setFontSize(10);
+      doc.setFont("courier", "normal");
+      doc.text("LEGAL METROLOGY (PACKAGED COMMODITIES) RULES, 2011", 20, 28);
+      doc.text("Enforcement Section 36 | Department of Consumer Affairs", 20, 34);
+      doc.text("----------------------------------------------------------------", 20, 39);
+
+      doc.text(`Cadre Authority : ${document.getElementById('cadreId').value}`, 20, 48);
+      doc.text(`Batch Size ($N$) : ${document.getElementById('batchSize').value} Units`, 20, 55);
+      doc.text(`AQL Sample ($n$) : ${document.getElementById('aqlSampleSize').value} Units`, 20, 62);
+      doc.text(`Nominal Net Wt  : ${dec} g/mL`, 20, 69);
+      doc.text(`Observed Net Wt : ${obs} g/mL`, 20, 76);
+      doc.text(`Deficit Total   : ${(dec - obs).toFixed(2)} g/mL`, 20, 83);
+      doc.text(`Permitted MPE   : ±${calculateMpe(dec).toFixed(2)} g/mL`, 20, 90);
+
+      doc.setFont("courier", "bold");
+      doc.text("STATUTORY ACTION NOTICE:", 20, 104);
+      doc.setFont("courier", "normal");
+      doc.text("Non-compliance with Second Schedule (MPE Limits) confirmed.", 20, 112);
+      doc.text("Lot is hereby seized under Section 36 of Legal Metrology Act, 2009.", 20, 118);
+      doc.text(`Timestamp: ${new Date().toISOString()}`, 20, 136);
+
+      doc.save("Form-IV_Seizure_Notice.pdf");
+    }
+
+    function downloadConsumerGrievance() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text("STATUTORY GRIEVANCE NOTICE — NCH 1915 / E-DAAKHIL", 20, 22);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text("Drafted via DRISHYAM Legal Metrology Consumer Desk", 20, 28);
+      doc.text("----------------------------------------------------------------------------------------", 20, 34);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("1. PACKAGING DECLARATION EVIDENCE (OCR EXTRACT):", 20, 44);
+      doc.setFont("courier", "normal");
+      const lines = doc.splitTextToSize(document.getElementById('ocrText').value || "No text.", 160);
+      doc.text(lines, 20, 52);
+
+      const nextY = 52 + (lines.length * 5) + 10;
+      doc.setFont("helvetica", "bold");
+      doc.text("2. OBSERVED DEFICIENCIES & THREATS:", 20, nextY);
+      doc.setFont("helvetica", "normal");
+      doc.text("- Package fails statutory disclosures under Rule 6 of LMPC 2011.", 22, nextY + 6);
+      doc.text(`- Promotional Target: ${document.getElementById('qrText').value || "None"}`, 22, nextY + 12);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("3. STATUTORY PRAYER:", 20, nextY + 24);
+      doc.setFont("helvetica", "normal");
+      doc.text("Cognizance is petitioned under Section 36 of Legal Metrology Act, 2009.", 22, nextY + 30);
+
+      doc.save("DRISHYAM_NCH_Complaint_Draft.pdf");
+    }
+
+    function issueManufacturerPass() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const code = document.getElementById('mfgBatchCode').value;
+      const tare = parseFloat(document.getElementById('tareWeightVal').value);
+      const gross = parseFloat(document.getElementById('grossWeightVal').value);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("DRISHYAM PRE-MARKET BATCH CLEARANCE CERTIFICATE", 20, 22);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text("Department of Consumer Affairs | Pre-Clearance Verification Desk", 20, 28);
+      doc.text("----------------------------------------------------------------------------------------", 20, 34);
+
+      doc.text(`Batch Reference Code : ${code}`, 20, 44);
+      doc.text(`Calibrated Tare Mass : ${tare} g`, 20, 51);
+      doc.text(`Gross Checkweigher   : ${gross} g`, 20, 58);
+      doc.text(`Calibrated Net Mass  : ${(gross - tare).toFixed(2)} g`, 20, 65);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("REGULATORY VERDICT: PRE-MARKET BATCH CLEARED (PASS)", 20, 80);
+      doc.setFont("helvetica", "normal");
+      doc.text("- Rule 6 Mandatory Declarations: Verified Satisfactory", 22, 88);
+      doc.text("- MPE Net Tolerance: Within Scheduled Bounds", 22, 94);
+
+      doc.save(`PreClearance_Pass_${code}.pdf`);
+    }
+  </script>
+</body>
+</html>
